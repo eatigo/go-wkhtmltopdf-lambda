@@ -67,4 +67,5 @@ fabric.properties
 go_wkhtmltopdf_linux
 *.zip
 wkhtmltopdf
+wkhtmltoimage
 .idea/
