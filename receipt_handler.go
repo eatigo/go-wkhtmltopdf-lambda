@@ -15,6 +15,9 @@ import (
 	"github.com/eatigo/go-wkhtmltopdf"
 )
 
+const contentTypeImage = "image/jpeg"
+const contentTypePdf = "application/pdf"
+
 func main() {
 	lambda.Start(handler)
 }
@@ -60,7 +63,7 @@ func createPDF(record events.S3EventRecord) error {
 	}
 
 	// write PDF to same filename with .pdf added
-	return putS3Object(record.S3.Bucket.Name, strings.Replace(record.S3.Object.Key, ".json", ".pdf", -1), pdfg.Bytes())
+	return putS3Object(record.S3.Bucket.Name, strings.Replace(record.S3.Object.Key, ".json", ".pdf", -1), contentTypePdf, pdfg.Bytes())
 }
 
 func createImage(record events.S3EventRecord) error {
@@ -84,7 +87,7 @@ func createImage(record events.S3EventRecord) error {
 	}
 
 	// write PDF to same filename with .png added
-	return putS3Object(record.S3.Bucket.Name, strings.Replace(record.S3.Object.Key, ".json", ".jpg", -1), image)
+	return putS3Object(record.S3.Bucket.Name, strings.Replace(record.S3.Object.Key, ".json", ".jpg", -1), contentTypeImage, image)
 }
 
 func getS3Object(bucket, key string) (io.ReadCloser, error) {
@@ -106,7 +109,7 @@ func getS3Object(bucket, key string) (io.ReadCloser, error) {
 	return obj.Body, nil
 }
 
-func putS3Object(bucket, key string, buf []byte) error {
+func putS3Object(bucket, key, contentType string, buf []byte) error {
 
 	sess, err := session.NewSession()
 	if err != nil {
@@ -114,9 +117,11 @@ func putS3Object(bucket, key string, buf []byte) error {
 	}
 
 	in := &s3.PutObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-		Body:   bytes.NewReader(buf),
+		Bucket:             aws.String(bucket),
+		Key:                aws.String(key),
+		Body:               bytes.NewReader(buf),
+		ContentType:        aws.String(contentType),
+		ContentDisposition: aws.String(fmt.Sprintf("attachment;filename=%s", key)),
 	}
 
 	_, err = s3.New(sess).PutObject(in)
